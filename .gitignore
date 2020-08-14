@@ -1,4 +1,5 @@
 *.csv
+*.json
 .DS_STORE
 .vscode/*
 .~lock.*
