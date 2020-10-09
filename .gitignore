@@ -4,3 +4,4 @@
 .vscode/*
 .~lock.*
 data/*
+*.ipynb_checkpoints
