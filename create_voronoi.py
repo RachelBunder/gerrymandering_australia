@@ -43,7 +43,6 @@ def create_voronoi(booths, state):
     regions, vertices = voronoi_finite_polygons_2d(vor, 2000000)
     
     # Clip by state border
-    nsw_border = 'data/20190518/GeneralPollingPlacesDownload-24310.csv'
     boundary_file = f'data/borders/AUG20_AdminBounds_ESRIShapefileorDBFfile_GDA2020/Administrative Boundaries/State Electoral Boundaries AUGUST 2020/Standard/{state}_STATE_ELECTORAL_POLYGON_shp.shp'
     try:
         border = gpd.read_file(boundary_file)
@@ -162,11 +161,15 @@ if __name__ == '__main__':
     booths.to_csv('tmp_check_booth_index.csv')
     
     booths = booths.set_index('PollingPlaceID', drop=False)
-    booths['geometry'] = booths.groupby('State', group_keys=False).apply(lambda x: create_voronoi(x, x['State'].iloc[0]))#.set_index('PollingPlaceID', drop=True)
-    # print(tmp.index)
-    # print(booths.index)
-    # gpd.GeoDataFrame(tmp, crs='epsg:4326').to_file('tmp_check_groupby_index.geojson', driver='GeoJSON')
-    print(booths.head())
-    booths = booths.drop('PollingPlaceID', axis=1)
-    booths = gpd.GeoDataFrame(booths, crs='epsg:4326')
-    booths.to_file("data/20190518/all_booths_voronoi.geojson", driver='GeoJSON')
+    
+    for state in booths['State'].unique():
+        print(state)
+        state_booth = booths[booths['State'] == state]
+        state_booth['geometry'] = create_voronoi(state_booth, state)#.set_index('PollingPlaceID', drop=True)
+        # print(tmp.index)
+        # print(booths.index)
+        # gpd.GeoDataFrame(tmp, crs='epsg:4326').to_file('tmp_check_groupby_index.geojson', driver='GeoJSON')
+        print(state)
+        state_booth = state_booth.drop('PollingPlaceID', axis=1)
+        state_booth = gpd.GeoDataFrame(state_booth, crs='epsg:4326')
+        state_booth.to_file(f"data/20190518/voronoi_{state}.geojson", driver='GeoJSON')
