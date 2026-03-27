@@ -3,11 +3,15 @@ import geopandas as gpd
 import numpy as np
 import shapely
 import os
+import json
 
 import plotly.express as px
 import plotly.graph_objects as go
 
 from scipy.spatial import Voronoi
+import plotly.express as px
+import numpy as np
+
 
 from shapely.ops import unary_union
 from shapely.geometry import Polygon
@@ -200,6 +204,49 @@ def voronoi_finite_polygons_2d(
         new_regions.append(new_region.tolist())
 
     return new_regions, np.asarray(new_vertices)
+
+
+def plot_voronoi(booths):
+    min_lon, min_lat, max_lon, max_lat = booths["voronoi"].total_bounds
+    centre_lon = (max_lon + min_lon) / 2
+    centre_lat = (min_lat + max_lat) / 2
+    area = (max_lon - min_lon) * (max_lat - min_lat) * 10
+    num_regions = len(booths)
+    zoom = np.interp(
+        x=area,
+        xp=[0, 5**-10, 4**-10, 3**-10, 2**-10, 0.0025, 1**-10, 2**10, 45324, 5**10],
+        fp=[20, 17, 16, 15, 14, 11, 7, 5, 3, 1],
+    )
+
+    booth_json = json.loads(booths["voronoi"].to_json(show_bbox=False))
+
+    fig = px.choropleth_map(
+        booths,
+        geojson=booth_json,
+        locations="PollingPlaceID",
+        color="PollingPlaceID",
+        color_continuous_scale="Viridis",
+        range_color=(0, num_regions),
+        map_style="carto-positron",
+        hover_data=["PremisesNm", "Longitude", "Latitude"],
+        opacity=0.5,
+        labels={"PollingPlaceID": "Input ID"},
+        center={"lat": centre_lat, "lon": centre_lon},
+        zoom=zoom,
+    )
+
+    fig.add_traces(
+        px.scatter_map(
+            booths,
+            lat="Latitude",
+            lon="Longitude",
+            hover_name="PremisesNm",
+            hover_data=["DivisionNm", "PollingPlaceNm", "PollingPlaceID"],
+        ).data
+    )
+
+    fig.update_layout(showlegend=False)
+    return fig
 
 
 if __name__ == "__main__":
