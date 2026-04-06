@@ -4,6 +4,7 @@ import numpy as np
 import shapely
 import os
 import json
+from typing import Optional
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -18,8 +19,8 @@ from shapely.geometry import Polygon
 
 
 def get_clean_booths(
-    booth_loc: str = "data/20190518/GeneralPollingPlacesDownload-24310.csv",
-    booth_url: str = "https://results.aec.gov.au/24310/Website/Downloads/GeneralPollingPlacesDownload-24310.csv",
+    booth_loc: str,
+    booth_url: Optional[str] = None,
 ) -> gpd.GeoDataFrame:
     """Load and filter polling booth data, downloading from the AEC if not found locally.
 
@@ -27,7 +28,14 @@ def get_clean_booths(
     ----------
     booth_loc : str
         Path to the local CSV file containing polling place data.
-
+    booth_url : str
+        url to booth data for relecant election.
+        2010: https://results.aec.gov.au/15508/Website/Downloads/GeneralPollingPlacesDownload-15508.csv
+        2013: https://results.aec.gov.au/17496/Website/Downloads/GeneralPollingPlacesDownload-17496.csv
+        2016: https://results.aec.gov.au/20499/Website/Downloads/GeneralPollingPlacesDownload-20499.csv
+        2019: https://results.aec.gov.au/24310/Website/Downloads/GeneralPollingPlacesDownload-24310.csv
+        2022: https://results.aec.gov.au/27966/Website/Downloads/GeneralPollingPlacesDownload-27966.csv
+        2025: https://results.aec.gov.au/31496/Website/Downloads/GeneralPollingPlacesDownload-31496.csv
     Returns
     -------
     gpd.GeoDataFrame
@@ -43,6 +51,10 @@ def get_clean_booths(
 
     booths = booths[booths["PollingPlaceTypeID"] == 1]
     booths = gpd.GeoDataFrame(booths)
+
+    booths["geometry"] = gpd.points_from_xy(
+        x=booths["Longitude"], y=booths["Latitude"], crs="EPSG:4326"
+    )
     return booths
 
 
@@ -74,11 +86,9 @@ def create_voronoi(
         Clipped Voronoi polygons in EPSG:4326, indexed by PollingPlaceID.
     """
     # state_boundary_file=f"data/borders/AUG20_AdminBounds_ESRIShapefileorDBFfile_GDA2020/Administrative Boundaries/State Electoral Boundaries AUGUST 2020/Standard/{state}_STATE_ELECTORAL_POLYGON_shp.shp",
-    state_boundary_file = f"data/borders/AUG20_AdminBounds_ESRIShapefileorDBFfile_GDA2020/Administrative Boundaries/State Electoral Boundaries AUGUST 2020/Standard/{state}_STATE_ELECTORAL_POLYGON_shp.shp"
+    state_boundary_file = f"../data/borders/AUG20_AdminBounds_ESRIShapefileorDBFfile_GDA2020/Administrative Boundaries/State Electoral Boundaries AUGUST 2020/Standard/{state}_STATE_ELECTORAL_POLYGON_shp.shp"
     booths = gpd.GeoDataFrame(booths)
-    booths["geometry"] = gpd.points_from_xy(
-        x=booths["Longitude"], y=booths["Latitude"], crs="EPSG:4326"
-    )
+
     booths = booths.to_crs(crs_code)
     booths["id"] = booths.reset_index(drop=True).index.values
 
